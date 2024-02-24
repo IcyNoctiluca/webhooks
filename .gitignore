@@ -1,0 +1,9 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+config.yaml
+.gcloudignore
+.idea
+*.log
+__pycache__
+.DS_Store
