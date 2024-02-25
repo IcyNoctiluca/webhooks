@@ -4,6 +4,7 @@ import yaml
 import os
 from flask import Flask, request, jsonify
 import util
+import messagebird
 
 app = Flask(__name__)
 
@@ -12,6 +13,7 @@ with open('config.yaml', 'r') as config_file:
     config = yaml.safe_load(config_file)
 
 SECRET_KEY = config['secret_key'].encode()
+MESSAGEBIRD_KEY = config['messagebird_key']
 LOG_FILE = config['log_file']
 PORT = int(config['python_port'])  # Read the port from the config
 
@@ -22,6 +24,9 @@ else:
     # local env.
     logging.basicConfig(filename='webhook.log', level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
+
+messagebirdClient = messagebird.Client(MESSAGEBIRD_KEY)
+logging.info('Created messagebird client')
 
 
 @app.route('/webhook', methods=['POST'])
@@ -38,7 +43,7 @@ def webhook():
 
             responseCode = 200
             responseMessage = util.getTemplateResponseMessage()
-
+            util.sendTextMessage(messagebirdClient, str(webhookAsDict))
             return util.logAndSendResponseMessage(responseMessage, responseCode)
 
         raise RuntimeError("HMAC verification failed for incoming webhook")
@@ -49,6 +54,7 @@ def webhook():
         responseMessage = util.getTemplateResponseMessage()
         responseMessage["error"] = str(e)
 
+        util.sendTextMessage(messagebirdClient, str(responseMessage))
         return util.logAndSendResponseMessage(responseMessage, responseCode)
 
 

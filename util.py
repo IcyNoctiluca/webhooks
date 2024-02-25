@@ -5,6 +5,8 @@ import binascii
 import json
 import logging
 from flask import jsonify
+import messagebird
+import os
 
 
 PAYLOAD_KEYS = [
@@ -19,6 +21,7 @@ PAYLOAD_KEYS = [
 ]
 
 ACCEPTED_MESSAGE_DICT = {"message": "[accepted]"}
+TEXT_RECIPIENTS = ['+31686446115']
 
 
 def getTemplateResponseMessage():
@@ -73,3 +76,24 @@ def isValidHmacNotification(webhookData, hmac_key) -> bool:
     expectedSignature = computeExpectedNotificationSignature(
         notificationItem, hmac_key)
     return hmac.compare_digest(expectedSignature, receivedSignature)
+
+
+def sendTextMessage(messagebirdClient, messageBody: str):
+
+    logging.info("Sending text message: %s", str(messageBody))
+
+    try:
+        if not (os.getenv('GAE_ENV', '').startswith('standard')):
+            # local dev env.
+            return None
+
+        msg = messagebirdClient.message_create(
+            originator='TestMessage', recipients=TEXT_RECIPIENTS, body=messageBody)
+        logging.info('Message id received: %s' % msg.id)
+
+    except messagebird.client.ErrorException as e:
+        logging.info('\nAn error occured while requesting a Message object:\n')
+        for error in e.errors:
+            logging.error('  code        : %d' % error.code)
+            logging.error('  description : %s' % error.description)
+            logging.error('  parameter   : %s\n' % error.parameter)
