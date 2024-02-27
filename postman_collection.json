@@ -1,0 +1,179 @@
+{
+	"info": {
+		"_postman_id": "1dbc70da-7318-4385-91b4-fa952c070504",
+		"name": "ADYEN WEBHOOKS",
+		"description": "#",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29218728"
+	},
+	"item": [
+		{
+			"name": "Local",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"hmac\", CryptoJS.HmacSHA256(request.data, '').toString(CryptoJS.digest))"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Signature",
+						"value": "{{hmac}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"live\":\"false\",\n   \"notificationItems\":[\n      {\n         \"NotificationRequestItem\":{\n            \"additionalData\":{\n               \"payoutEligible\":\"Y\",\n               \"authCode\":\"002824\",\n               \"cardSummary\":\"1111\",\n               \"PaymentAccountReference\":\"9JKaYUdWGyxuNQ6Vum2NvtzlweLdi\",\n               \"retry.attempt1.acquirerAccount\":\"TestPmmAcquirerAccount\",\n               \"retry.attempt1.avsResultRaw\":\"5\",\n               \"cardIssuingBank\":\"ADYEN TEST BANK\",\n               \"retry.attempt1.acquirer\":\"TestPmmAcquirer\",\n               \"checkout.cardAddedBrand\":\"visa\",\n               \"hmacSignature\":\"pOJBJf1V\\/MPHOUgEeteG2QwrAyicgXRHDDhGa3QLjL4=\",\n               \"expiryDate\":\"03\\/2030\",\n               \"retry.attempt1.responseCode\":\"Approved\",\n               \"fundsAvailability\":\"I\",\n               \"cardBin\":\"411111\",\n               \"threeds2.cardEnrolled\":\"false\",\n               \"retry.attempt1.rawResponse\":\"AUTHORISED\",\n               \"paymentMethod\":\"visa\",\n               \"cardPaymentMethod\":\"visa\",\n               \"issuerBin\":\"41111111\",\n               \"cardIssuingCountry\":\"NL\"\n            },\n            \"amount\":{\n               \"currency\":\"USD\",\n               \"value\":1000\n            },\n            \"eventCode\":\"AUTHORISATION\",\n            \"eventDate\":\"2024-02-24T20:37:24+01:00\",\n            \"merchantAccountCode\":\"TestMerchant\",\n            \"merchantReference\":\"Your order number\",\n            \"operations\":[\n               \"CANCEL\",\n               \"CAPTURE\",\n               \"REFUND\"\n            ],\n            \"paymentMethod\":\"visa\",\n            \"pspReference\":\"CZL835N5HV8DCG65\",\n            \"reason\":\"002824:1111:03\\/2030\",\n            \"success\":\"true\"\n         }\n      }\n   ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{localwebhook}}:8000/webhook",
+					"host": [
+						"{{localwebhook}}"
+					],
+					"port": "8000",
+					"path": [
+						"webhook"
+					]
+				},
+				"description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+			},
+			"response": []
+		},
+		{
+			"name": "Production",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"hmac\", CryptoJS.HmacSHA256(request.data, '').toString(CryptoJS.digest))"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Signature",
+						"value": "{{hmac}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"live\":\"false\",\n   \"notificationItems\":[\n      {\n         \"NotificationRequestItem\":{\n            \"additionalData\":{\n               \"payoutEligible\":\"Y\",\n               \"authCode\":\"002824\",\n               \"cardSummary\":\"1111\",\n               \"PaymentAccountReference\":\"9JKaYUdWGyxuNQ6Vum2NvtzlweLdi\",\n               \"retry.attempt1.acquirerAccount\":\"TestPmmAcquirerAccount\",\n               \"retry.attempt1.avsResultRaw\":\"5\",\n               \"cardIssuingBank\":\"ADYEN TEST BANK\",\n               \"retry.attempt1.acquirer\":\"TestPmmAcquirer\",\n               \"checkout.cardAddedBrand\":\"visa\",\n               \"hmacSignature\":\"pOJBJf1V\\/MPHOUgEeteG2QwrAyicgXRHDDhGa3QLjL4=\",\n               \"expiryDate\":\"03\\/2030\",\n               \"retry.attempt1.responseCode\":\"Approved\",\n               \"fundsAvailability\":\"I\",\n               \"cardBin\":\"411111\",\n               \"threeds2.cardEnrolled\":\"false\",\n               \"retry.attempt1.rawResponse\":\"AUTHORISED\",\n               \"paymentMethod\":\"visa\",\n               \"cardPaymentMethod\":\"visa\",\n               \"issuerBin\":\"41111111\",\n               \"cardIssuingCountry\":\"NL\"\n            },\n            \"amount\":{\n               \"currency\":\"USD\",\n               \"value\":1000\n            },\n            \"eventCode\":\"AUTHORISATION\",\n            \"eventDate\":\"2024-02-24T20:37:24+01:00\",\n            \"merchantAccountCode\":\"TestMerchant\",\n            \"merchantReference\":\"Your order number\",\n            \"operations\":[\n               \"CANCEL\",\n               \"CAPTURE\",\n               \"REFUND\"\n            ],\n            \"paymentMethod\":\"visa\",\n            \"pspReference\":\"CZL835N5HV8DCG65\",\n            \"reason\":\"002824:1111:03\\/2030\",\n            \"success\":\"true\"\n         }\n      }\n   ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{prodwebhook}}",
+					"host": [
+						"{{prodwebhook}}"
+					]
+				},
+				"description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"//var hmac = CryptoJS.HmacSHA256(request.data, '').toString(CryptoJS.digest)",
+					"//console.log(hmac)",
+					"",
+					"//pm.collectionVariables.set(\"hmac\", hmac)",
+					"",
+					"//console.log(pm.collectionVariables.get(\"hmac\"))"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "id",
+			"value": "1"
+		},
+		{
+			"key": "base_url",
+			"value": "https://postman-rest-api-learner.glitch.me/"
+		},
+		{
+			"key": "localwebhook",
+			"value": "localhost"
+		},
+		{
+			"key": "hmac",
+			"value": ""
+		},
+		{
+			"key": "prodwebhook",
+			"value": "https://adyen.flawlesscowboy.app/webhook",
+			"type": "string"
+		}
+	]
+}
