@@ -33,29 +33,29 @@ logging.info('Created messagebird client')
 def webhook():
 
     responseCode = None
+    webhookResponseBody = util.getTemplateResponseMessage()
+    textMessageBody = None
+
     webhookData = request.data.decode()
     logging.info("Received webhook data: %s", webhookData)
     webhookAsDict = util.convertWebhookToDict(webhookData)
 
     try:
-        if util.isValidHmacNotification(webhookAsDict, SECRET_KEY):
-            logging.info("Correctly validated hmac signature")
+        util.validHmacSignatureOrException(webhookAsDict, SECRET_KEY)
+        logging.info("Correctly validated hmac signature")
+        responseCode = 200
+        textMessageBody = str(webhookAsDict)
 
-            responseCode = 200
-            responseMessage = util.getTemplateResponseMessage()
-            util.sendTextMessage(messagebirdClient, str(webhookAsDict))
-            return util.logAndSendResponseMessage(responseMessage, responseCode)
-
-        raise RuntimeError("HMAC verification failed for incoming webhook")
     except Exception as e:
         logging.error("Error processing webhook: %s", str(e))
 
         responseCode = 400
-        responseMessage = util.getTemplateResponseMessage()
-        responseMessage["error"] = str(e)
+        webhookResponseBody["error"] = str(e)
+        textMessageBody = str(webhookResponseBody)
 
-        util.sendTextMessage(messagebirdClient, str(responseMessage))
-        return util.logAndSendResponseMessage(responseMessage, responseCode)
+    finally:
+        util.sendTextMessage(messagebirdClient, textMessageBody)
+        return util.logAndSendResponseMessage(webhookResponseBody, responseCode)
 
 
 if __name__ == '__main__':

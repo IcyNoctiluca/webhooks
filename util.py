@@ -55,7 +55,7 @@ def computeExpectedNotificationSignature(notificationItem: dict, hmac_key: str) 
     return base64.b64encode(hm.digest()).decode("utf-8")
 
 
-def isValidHmacNotification(webhookData, hmac_key) -> bool:
+def validHmacSignatureOrException(webhookData: dict, hmac_key: str):
 
     if ('notificationItems' not in webhookData):
         raise RuntimeError("notificationItems key not inside webhook!")
@@ -75,7 +75,9 @@ def isValidHmacNotification(webhookData, hmac_key) -> bool:
     receivedSignature = notificationItem['additionalData']['hmacSignature']
     expectedSignature = computeExpectedNotificationSignature(
         notificationItem, hmac_key)
-    return hmac.compare_digest(expectedSignature, receivedSignature)
+
+    if not (hmac.compare_digest(expectedSignature, receivedSignature)):
+        raise RuntimeError("HMAC verification failed for incoming webhook")
 
 
 def sendTextMessage(messagebirdClient, messageBody: str):
