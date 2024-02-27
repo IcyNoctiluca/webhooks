@@ -39,16 +39,20 @@ def webhook():
     webhookData = request.data.decode()
     logging.info("Received webhook data: %s", webhookData)
     webhookAsDict = util.convertWebhookToDict(webhookData)
+    eventCode = util.getWebhookEventCode(webhookAsDict)
 
     try:
         util.validHmacSignatureOrException(webhookAsDict, SECRET_KEY)
+        util.validateWebhookEventCodeOrException(eventCode)
+
         logging.info("Correctly validated hmac signature")
         responseCode = 200
         textMessageBody = str(webhookAsDict)
 
+        util.processWebhook(webhookAsDict)
+
     except Exception as e:
         logging.error("Error processing webhook: %s", str(e))
-
         responseCode = 400
         webhookResponseBody["error"] = str(e)
         textMessageBody = str(webhookResponseBody)

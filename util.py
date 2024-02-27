@@ -7,6 +7,7 @@ import logging
 from flask import jsonify
 import messagebird
 import os
+from NotificationProcessor import AuthorisationStrategy, ReportAvailableStrategy, RecurringContractStrategy
 
 
 PAYLOAD_KEYS = [
@@ -23,8 +24,27 @@ PAYLOAD_KEYS = [
 ACCEPTED_MESSAGE_DICT = {"message": "[accepted]"}
 TEXT_RECIPIENTS = ['+31686446115']
 
+STRATEGY_MAP = {"AUTHORISATION": AuthorisationStrategy(),
+                "REPORT_AVAILABLE": ReportAvailableStrategy(),
+                "RECURRING_CONTRACT": RecurringContractStrategy()}
 
-def getTemplateResponseMessage():
+
+def processWebhook(webhook: dict) -> None:
+    strategy = STRATEGY_MAP[getWebhookEventCode(webhook)]
+    strategy.execute(webhook)
+
+
+def validateWebhookEventCodeOrException(eventCode: str) -> str:
+    if eventCode in STRATEGY_MAP:
+        return True
+    raise ValueError(f"eventCode {eventCode} is not recognised!")
+
+
+def getWebhookEventCode(webhook: dict) -> str:
+    return webhook['notificationItems'][0]['NotificationRequestItem']['eventCode']
+
+
+def getTemplateResponseMessage() -> dict:
     return ACCEPTED_MESSAGE_DICT.copy()
 
 
@@ -32,7 +52,7 @@ def convertWebhookToDict(webhook: str) -> dict:
     return dict(json.loads(webhook))
 
 
-def logAndSendResponseMessage(responseMessage: dict, responseCode: int):
+def logAndSendResponseMessage(responseMessage: dict, responseCode: int) -> None:
     logging.info("Sending response: %s", str(responseMessage))
     return jsonify(responseMessage), responseCode
 
@@ -55,46 +75,47 @@ def computeExpectedNotificationSignature(notificationItem: dict, hmac_key: str) 
     return base64.b64encode(hm.digest()).decode("utf-8")
 
 
-def validHmacSignatureOrException(webhookData: dict, hmac_key: str):
+def validHmacSignatureOrException(webhookData: dict, hmac_key: str) -> None:
 
     if ('notificationItems' not in webhookData):
-        raise RuntimeError("notificationItems key not inside webhook!")
+        raise ValueError("notificationItems key not inside webhook!")
 
     if len(webhookData['notificationItems']) > 1:
-        raise RuntimeError("too many elements inside notificationItems array!")
+        raise ValueError("too many elements inside notificationItems array!")
 
     notificationItem = webhookData['notificationItems'][0]['NotificationRequestItem']
 
     if 'additionalData' not in notificationItem:
-        raise RuntimeError(
+        raise ValueError(
             "additionalData key not inside notificationItem! Cannot verify HMAC signature")
 
     if "hmacSignature" not in notificationItem['additionalData']:
-        raise RuntimeError("No hmacSignature provided in additionalData")
+        raise ValueError("No hmacSignature provided in additionalData")
 
     receivedSignature = notificationItem['additionalData']['hmacSignature']
     expectedSignature = computeExpectedNotificationSignature(
         notificationItem, hmac_key)
 
     if not (hmac.compare_digest(expectedSignature, receivedSignature)):
-        raise RuntimeError("HMAC verification failed for incoming webhook")
+        raise ValueError("HMAC verification failed for incoming webhook")
 
 
-def sendTextMessage(messagebirdClient, messageBody: str):
+def sendTextMessage(messagebirdClient, messageBody: str) -> None:
+
+    if not (os.getenv('GAE_ENV', '').startswith('standard')):
+        # local dev env.
+        return None
 
     logging.info("Sending text message: %s", str(messageBody))
 
     try:
-        if not (os.getenv('GAE_ENV', '').startswith('standard')):
-            # local dev env.
-            return None
-
         msg = messagebirdClient.message_create(
             originator='TestMessage', recipients=TEXT_RECIPIENTS, body=messageBody)
         logging.info('Message id received: %s' % msg.id)
 
     except messagebird.client.ErrorException as e:
-        logging.info('\nAn error occured while requesting a Message object:\n')
+        logging.error(
+            '\nAn error occured while requesting a Message object:\n')
         for error in e.errors:
             logging.error('  code        : %d' % error.code)
             logging.error('  description : %s' % error.description)
