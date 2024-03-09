@@ -2,13 +2,17 @@ import base64
 import hmac
 import hashlib
 import binascii
+import yaml
 import json
-import logging
 from flask import jsonify
-import messagebird
-import os
-from NotificationProcessor import AuthorisationStrategy, ReportAvailableStrategy, RecurringContractStrategy
 
+import Logging
+
+# Load configuration from the YAML file
+with open('config.yaml', 'r') as config_file:
+    config = yaml.safe_load(config_file)
+
+HMAC_SECRET_KEY = config['hmac_secret_key'].encode()
 
 PAYLOAD_KEYS = [
     'pspReference',
@@ -21,21 +25,20 @@ PAYLOAD_KEYS = [
     'success',
 ]
 
-ACCEPTED_MESSAGE_DICT = {"message": "[accepted]"}
-TEXT_RECIPIENTS = ['+31686446115']
-
-STRATEGY_MAP = {"AUTHORISATION": AuthorisationStrategy(),
-                "REPORT_AVAILABLE": ReportAvailableStrategy(),
-                "RECURRING_CONTRACT": RecurringContractStrategy()}
+EVENT_CODES = ["AUTHORISATION", "REPORT_AVAILABLE", "RECURRING_CONTRACT"]
 
 
-def processWebhook(webhook: dict) -> None:
-    strategy = STRATEGY_MAP[getWebhookEventCode(webhook)]
-    strategy.execute(webhook)
+def getValidEventCodes() -> list:
+    return EVENT_CODES.copy()
+
+
+def validateWebhook(webhook: dict) -> None:
+    validateWebhookEventCodeOrException(getWebhookEventCode(webhook))
+    validHmacSignatureOrException(webhook)
 
 
 def validateWebhookEventCodeOrException(eventCode: str) -> str:
-    if eventCode in STRATEGY_MAP:
+    if eventCode in getValidEventCodes():
         return True
     raise ValueError(f"eventCode {eventCode} is not recognised!")
 
@@ -44,17 +47,8 @@ def getWebhookEventCode(webhook: dict) -> str:
     return webhook['notificationItems'][0]['NotificationRequestItem']['eventCode']
 
 
-def getTemplateResponseMessage() -> dict:
-    return ACCEPTED_MESSAGE_DICT.copy()
-
-
 def convertWebhookToDict(webhook: str) -> dict:
     return dict(json.loads(webhook))
-
-
-def logAndSendResponseMessage(responseMessage: dict, responseCode: int) -> None:
-    logging.info("Sending response: %s", str(responseMessage))
-    return jsonify(responseMessage), responseCode
 
 
 def computeExpectedNotificationSignature(notificationItem: dict, hmac_key: str) -> str:
@@ -75,7 +69,7 @@ def computeExpectedNotificationSignature(notificationItem: dict, hmac_key: str) 
     return base64.b64encode(hm.digest()).decode("utf-8")
 
 
-def validHmacSignatureOrException(webhookData: dict, hmac_key: str) -> None:
+def validHmacSignatureOrException(webhookData: dict) -> None:
 
     if ('notificationItems' not in webhookData):
         raise ValueError("notificationItems key not inside webhook!")
@@ -94,29 +88,15 @@ def validHmacSignatureOrException(webhookData: dict, hmac_key: str) -> None:
 
     receivedSignature = notificationItem['additionalData']['hmacSignature']
     expectedSignature = computeExpectedNotificationSignature(
-        notificationItem, hmac_key)
+        notificationItem, HMAC_SECRET_KEY)
 
     if not (hmac.compare_digest(expectedSignature, receivedSignature)):
         raise ValueError("HMAC verification failed for incoming webhook")
 
 
-def sendTextMessage(messagebirdClient, messageBody: str) -> None:
+if __name__ == "__main__":
 
-    if not (os.getenv('GAE_ENV', '').startswith('standard')):
-        # local dev env.
-        return None
+    with open('resource/example_webhook.json', 'r') as webhookFile:
+        webhook = yaml.safe_load(webhookFile)
 
-    logging.info("Sending text message: %s", str(messageBody))
-
-    try:
-        msg = messagebirdClient.message_create(
-            originator='TestMessage', recipients=TEXT_RECIPIENTS, body=messageBody)
-        logging.info('Message id received: %s' % msg.id)
-
-    except messagebird.client.ErrorException as e:
-        logging.error(
-            '\nAn error occured while requesting a Message object:\n')
-        for error in e.errors:
-            logging.error('  code        : %d' % error.code)
-            logging.error('  description : %s' % error.description)
-            logging.error('  parameter   : %s\n' % error.parameter)
+    validateWebhook(webhook)

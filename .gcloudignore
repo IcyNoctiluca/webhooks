@@ -2,8 +2,8 @@
 #.gcloudignore
 
 # git & ignore
-#.git
-#.gitignore
+.git
+.gitignore
 
 __pycache__
 /setup.cfg
@@ -12,4 +12,4 @@ __pycache__
 .DS_Store
 
 # config
-config.yaml
+#config.yaml
