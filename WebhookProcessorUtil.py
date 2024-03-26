@@ -16,7 +16,7 @@ class AuthorisationStrategy(Strategy):
     def execute(self, webhook: dict):
         # store authed payment in DB
         Logging.configureLogging().info("Executing AuthorisationStrategy")
-        textMessageBody = str(webhook)
+        textMessageBody = WebhookValidatorUtil.getWebhookPspReference(webhook)
         MessagebirdUtil.sendTextMessage(textMessageBody)
 
 

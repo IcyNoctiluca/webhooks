@@ -47,6 +47,10 @@ def getWebhookEventCode(webhook: dict) -> str:
     return webhook['notificationItems'][0]['NotificationRequestItem']['eventCode']
 
 
+def getWebhookPspReference(webhook: dict) -> str:
+    return webhook['notificationItems'][0]['NotificationRequestItem']['pspReference']
+
+
 def convertWebhookToDict(webhook: str) -> dict:
     return dict(json.loads(webhook))
 
